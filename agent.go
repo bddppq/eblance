@@ -1,24 +1,21 @@
 package eblance
 
-type Agent interface {
-	Start()
-	GetCenter() *Center
-	Execute(job *Job)
+import (
+	"golang.org/x/crypto/ssh"
+	"net"
+)
+
+type Agent struct {
+	host *remoteHost
 }
 
 type remoteHost struct {
-	center *Center
-}
-
-type localHost struct {
-	center *Center
+	hostname   string
+	center     *Center
+	connection *net.Conn
 }
 
 func (h *remoteHost) Start() {
-	startAgent(h)
-}
-
-func (h *localHost) Start() {
 	startAgent(h)
 }
 
@@ -26,41 +23,21 @@ func (h *remoteHost) GetCenter() *Center {
 	return h.center
 }
 
-func (h *localHost) GetCenter() *Center {
-	return h.center
-}
-
 func (h *remoteHost) Execute(job *Job) {
-	execute(h, job)
-}
-
-func (h *localHost) Execute(job *Job) {
-	execute(h, job)
-
-}
-
-func startAgent(agent Agent) {
-	for {
-		// TODO
+	session, err := h.connection.NewSession()
+	defer session.Close()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create session: %s", err)
 	}
-}
-
-func execute(agent Agent, job *Job) {
-	go func() {
-		// TODO
-	}()
+	session.Run(string(job.Command))
 }
 
 func NewAgent(name string, center *Center) Agent {
-	// TODO: add more check here (e.g. ip address) to identify localhost
-	// Or do we really want to support localhost?
-	if name == "localhost" {
-		return &localHost{
-			center,
-		}
-	} else {
-		return &remoteHost{
-			center,
-		}
+	host := &remoteHost{
+		name,
+		center,
+	}
+	return &Agent{
+		host,
 	}
 }
